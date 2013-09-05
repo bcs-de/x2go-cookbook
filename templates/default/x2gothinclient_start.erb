@@ -2,6 +2,15 @@
 # Created by Chef for <%= node.name %>
 #
 
+MAC=`ip link show eth0 |grep link |cut -d' ' -f 6`
+<% @config[:xinerama].each do |mac, xrandrlines| %>
+if [ x${MAC} = x<%= mac %> ]; then
+    <% xrandrlines.each do |line| %>
+    xrandr <%= line %>
+    <% end %>
+fi
+<% end %>
+
 /usr/bin/x2goclient --no-menu \
                     --maximize \
                     --link=lan \
