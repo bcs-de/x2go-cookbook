@@ -163,6 +163,10 @@ EndSection
   mode 0755
 end
 
+file "#{x2gotce_base}/chroot/etc/hostname" do
+  action :delete
+end
+
 
 template "#{x2gotce_base}/etc/x2gothinclient_sessions" do
   source "x2gothinclient_sessions.erb"
