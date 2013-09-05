@@ -1,0 +1,34 @@
+#
+# Created by Chef for <%= node.name %>
+#
+
+<% @sessions.each do |session| %>
+[20130826-<%= session[:name] %>]
+name = <%= session[:name] %>
+autostart = <%= session[:autostart] || "false" %>
+width = 1024
+height = 768
+fullscreen = <%= session[:fullscreen] || "false" %>
+xinerama = <%= session[:xinerama] || "false" %>
+multidisp = <%= session[:multidisp] || "false" %>
+quality = <%= session[:quality] || "9" %>
+pack = <%= session[:pack] || "4k-png-jpeg" %>
+speed = <%= session[:speed] || "3" %>
+print = <%= session[:print] || "false" %>
+<% if session[:export] %>
+useexports = true
+export <%= session[:export] %>
+<% else %>
+useexports = false
+<% end %>
+command = <%= session[:command] %>
+<% if session[:command] == 'RDP' %>
+rdpserver = <%= session[:host] %>
+host = <%= session[:host] %>
+<% elsif session[:command] == 'XDMCP' %>
+xdmcpserver = <%= session[:host] %>
+<% else %>
+host = <%= session[:host] %>
+<% end %>
+
+<% end %>

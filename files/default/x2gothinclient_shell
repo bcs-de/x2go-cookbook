@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# Copyright (C) 2010-2012 by X2Go project, http://wiki.x2go.org
+#       Oleksandr Shneyder <oleksandr.shneyder@obviously-nice.de>
+#       Moritz 'Morty' Struebe <Moritz.Struebe@informatik.uni-erlangen.de>
+#       Mike Gabriel <mike.gabriel@das-netzwerkteam.de>
+
+# X2Go is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# X2Go is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+set -e
+
+if echo $0 | egrep "^./bin/.*$" >/dev/null; then
+	ETCDIR="etc/"
+elif echo $0 | egrep "^./x2gothinclient_.*$" >/dev/null; then
+	ETCDIR="../etc/"
+else
+	ETCDIR=/etc/x2go/
+fi
+
+source $ETCDIR/x2gothinclient_settings
+
+TC_SHELL="${TC_SHELL:-bash}"
+TC_CHROOT="${TC_CHROOT:-/opt/x2gothinclient}"
+
+test -e "$TC_CHROOT" || { 
+	echo "ERROR: X2Go Thin Client chroot does not exist at $TC_CHROOT."
+	echo "Run x2gothinclient_create to create it..."
+	exit -1
+}
+
+[ "x$USER" == "xroot" ] || { 
+	echo "ERROR: X2Go Thin Client management scripts have to run"
+	echo "as super-user root."
+	exit -2
+}
+
+cat > "$TC_CHROOT/x2go_tce_shell.sh" <<EOF
+#!/bin/bash
+export HOME=/root
+
+# export the proxy server (if any) to the shell.
+export http_proxy=$TC_HTTP_PROXY
+export https_proxy=$TC_HTTPS_PROXY
+export ftp_proxy=$TC_FTP_PROXY
+
+echo "This shell has been started in your X2Go Thin Client's chroot environment."
+echo 'All changes performed here will take effect on your X2Go Thin Clients'
+echo 'after their next (re)boot. So be careful!!!'
+echo
+echo "To return from this chroot shell hit STRG+D or type ,,exit'' on the"
+echo 'command line...'
+echo
+
+# migrate start-stop-daemon to wrapper & variable based start-stop-daemon execution
+if [ \$(stat --format '%s' /sbin/start-stop-daemon) -gt 200 ]; then
+	cp /sbin/start-stop-daemon /sbin/start-stop-daemon.real
+	echo '#!/bin/sh'                                                             > /sbin/start-stop-daemon
+	echo '#'                                                                     >> /sbin/start-stop-daemon
+	echo '# X2Go Wrapper to avoid running daemons while performing maintenance.' >> /sbin/start-stop-daemon
+	echo '#'                                                                     >> /sbin/start-stop-daemon
+	echo                                                                         >> /sbin/start-stop-daemon
+	echo 'if [ "\$X2GO_HANDLE_DAEMONS" != "false" ]; then'                        >> /sbin/start-stop-daemon
+	echo '        /sbin/start-stop-daemon.real "\$@"'                             >> /sbin/start-stop-daemon
+	echo 'fi'                                                                    >> /sbin/start-stop-daemon
+	chmod a+x /sbin/start-stop-daemon
+fi
+
+export X2GO_HANDLE_DAEMONS=false
+
+mount /root
+
+${*:-/bin/$TC_SHELL}
+
+umount /root
+
+echo
+echo "X2go Thin Client Shell has exited."
+echo
+EOF
+chmod u+x "$TC_CHROOT/x2go_tce_shell.sh"
+
+mkdir -p "$TC_CHROOT/"{proc,dev/pts,sys}
+mount | grep "$TC_CHROOT/proc" >/dev/null || mount -tproc proc "$TC_CHROOT/proc" || true
+mount | grep "$TC_CHROOT/sys" >/dev/null || mount -tsysfs sys "$TC_CHROOT/sys" || true
+mount | grep "$TC_CHROOT/dev/pts" >/dev/null || mount -tdevpts devts "$TC_CHROOT/dev/pts" || true
+cp "$TC_CHROOT/etc/resolv.conf" "$TC_CHROOT/etc/resolv.conf.disabled-by-x2go"
+test -f /etc/resolv.conf && cp /etc/resolv.conf "$TC_CHROOT/etc/resolv.conf"
+
+chroot "$TC_CHROOT" /x2go_tce_shell.sh
+
+test -f "$TC_CHROOT/etc/resolv.conf.disabled-by-x2go" && mv "$TC_CHROOT/etc/resolv.conf.disabled-by-x2go" "$TC_CHROOT/etc/resolv.conf"
+
+for mountpoint in proc dev/pts sys; do
+	while true; do
+		cat /proc/mounts | grep "$TC_CHROOT/$mountpoint" >/dev/null && umount "$TC_CHROOT/$mountpoint" || break
+	done
+done

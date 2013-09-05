@@ -1,0 +1,15 @@
+#LABEL x2go-tce-486
+#        MENU LABEL  X2Go ^Thin Client
+#        KERNEL vmlinuz.486
+#        APPEND initrd=initrd.img.486 nfsroot=/opt/x2gothinclient/chroot boot=nfs ro quiet nomodeset splash
+
+LABEL x2go-tce-i686
+	MENU LABEL X2Go ^Thin Client
+	KERNEL x2go/vmlinuz-3.2.0-4-686-pae
+	APPEND initrd=x2go/initrd.img-3.2.0-4-686-pae nfsroot=<%= @x2gotce_base %>/chroot boot=nfs ro quiet splash
+
+
+LABEL x2go-tce-i686-debug
+	MENU LABEL X2Go Thin Client ^Debug
+	KERNEL x2go/vmlinuz-3.2.0-4-686-pae
+	APPEND initrd=x2go/initrd.img-3.2.0-4-686-pae nfsroot=<%= @x2gotce_base %>/chroot boot=nfs ro

@@ -1,0 +1,236 @@
+#!/bin/bash
+
+# Copyright (C) 2010-2012 by X2Go project, http://wiki.x2go.org
+#       Oleksandr Shneyder <oleksandr.shneyder@obviously-nice.de>
+#       Moritz 'Morty' Struebe <Moritz.Struebe@informatik.uni-erlangen.de>
+#       Mike Gabriel <mike.gabriel@das-netzwerkteam.de>
+
+# X2Go is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# X2Go is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+set -e
+
+if echo $0 | egrep "^./bin/.*$" >/dev/null; then
+	ETCDIR="etc/"
+	SHAREDIR="share/"
+elif echo $0 | egrep "^./x2gothinclient_.*$" >/dev/null; then
+	ETCDIR="../etc"
+	SHAREDIR="../share/"
+else
+	ETCDIR=/etc/x2go
+	SHAREDIR="/usr/share/x2go/tce/"
+fi
+
+source $ETCDIR/x2gothinclient_settings
+
+TC_BASE="${TC_BASE:-/opt/x2gothinclient}"
+TC_CHROOT="${TC_CHROOT:-$TC_BASE/chroot}"
+TC_CONFIG="${TC_CONFIG:-$TC_BASE/etc}"
+TC_DISTRO_CODENAME="${TC_DISTRO_CODENAME:-squeeze}"
+TC_DEBMIRROR_URL="${TC_DEBMIRROR_URL:-'http://ftp.debian.org/debian'}"
+TC_X2GO_DEBURL="${TC_X2GO_DEBURL:-'deb http://packages.x2go.org $TC_DISTRO_CODENAME main'}"
+TC_MODULE_BLACKLIST="${TC_MODULE_BLACKLIST:-'pcspkr'}"
+
+TC_NONINTERACTIVE="${TC_NONINTERACTIVE:-}"
+
+test -e "$TC_CHROOT" && { 
+	echo "ERROR: X2Go Thin Client chroot already exists at $TC_CHROOT."
+	echo "Clear $TC_BASE/ and then run $(basename $0) again..."
+	exit -1
+}
+
+[ "x$USER" == "xroot" ] || { 
+	echo "ERROR: X2Go Thin Client management scripts have to run as super-user root."
+	exit -2
+}
+
+if [ "x${TC_NONINTERACTIVE}" = "x" ]; then
+    echo "Hit <RETURN> to continue with X2Go TCE chroot creation using"
+    echo "the above TCE parameters..."
+    echo
+    echo "Alternatively, hit STRG-C to cancel the operation now!!!"
+    read
+else
+    echo "Non-interactive mode selected, will continue with the above settings"
+fi
+
+export LANG=C
+
+mkdir -p $TC_CONFIG
+test -f $TC_CONFIG/x2gothinclient_init || cp $SHAREDIR/etc/x2gothinclient_init $TC_CONFIG
+test -f $TC_CONFIG/x2gothinclient_start || cp $SHAREDIR/etc/x2gothinclient_start $TC_CONFIG
+test -f $TC_CONFIG/x2gothinclient_sessions || cp $SHAREDIR/etc/x2gothinclient_sessions $TC_CONFIG
+test -f $TC_CONFIG/x2goclient-background.svg || cp $SHAREDIR/etc/x2goclient-background.svg $TC_CONFIG
+
+mkdir -p $TC_CONFIG/freerdp
+test -f $TC_CONFIG/freerdp/known_hosts || echo "# X2Go TCE: validate allowed RDP servers with their fingerprints through this file" > $TC_CONFIG/freerdp/known_hosts
+
+apt-get install debootstrap
+mkdir -p $TC_CHROOT
+
+# use a proxy server for APT (if any is configured)
+export http_proxy="$TC_HTTP_PROXY"
+export https_proxy="$TC_HTTPS_PROXY"
+export ftp_proxy="$TC_FTP_PROXY"
+
+debootstrap --arch i386 $TC_DISTRO_CODENAME $TC_CHROOT/ $TC_DEBMIRROR_URL
+cp /etc/resolv.conf $TC_CHROOT/etc/resolv.conf
+if [ "$TC_DISTRO_CODENAME" = "squeeze" ]; then
+	echo "auto lo" >>   $TC_CHROOT/etc/network/interfaces
+	echo "iface lo inet loopback" >>   $TC_CHROOT/etc/network/interfaces
+fi
+echo "x2gothinclient" > $TC_CHROOT/etc/hostname
+echo "127.0.0.1 localhost" >> $TC_CHROOT/etc/hosts
+
+cat > $TC_CHROOT/etc/fstab <<EOF
+proc	/proc			proc	defaults,noauto		0	0
+none	/dev/pts		devpts	gid=5,mode=620,noauto	0	0
+none	/tmp			tmpfs	size=50M,mode=1777	0	0
+none	/root			tmpfs	size=100M,mode=700	0	0
+none	/etc/udev/rules.d	tmpfs	size=50M		0	0
+none	/var/log		tmpfs	size=50M		0	0
+none	/var/lib/x2gothinclient	tmpfs	size=50M		0	0
+none	/media			tmpfs	size=50M		0	0
+none	/var/lib/nfs		tmpfs	size=50M		0	0
+none	/var/lib/xkb		tmpfs	size=50M		0	0
+none	/var/lib/dbus		tmpfs	size=50M		0	0
+none	/var/lib/alsa		tmpfs	size=50M		0	0
+EOF
+
+# differences between Debian versions
+if [ "$TC_DISTRO_CODENAME" = "squeeze" ]; then
+	cat >> $TC_CHROOT/etc/fstab <<EOF
+none	/var/run		tmpfs	size=50M		0	0
+none	/var/lock		tmpfs	size=50M		0	0
+EOF
+elif [ "$TC_DISTRO_CODENAME" = "wheezy" ]; then
+	cat >> $TC_CHROOT/etc/fstab <<EOF
+none	/run			tmpfs	size=50M		0	0
+EOF
+fi
+
+cat > $TC_CHROOT/x2go_tce_install.sh <<EOF
+#!/bin/bash
+
+export LANG=C
+export HOME=/root
+export http_proxy=$TC_HTTP_PROXY
+export https_proxy=$TC_HTTPS_PROXY
+export ftp_proxy=$TC_FTP_PROXY
+
+if [ "x${TC_NONINTERACTIVE}" != "x" ]; then
+    export DEBIAN_FRONTEND=noninteractive
+fi
+
+mkdir -p /tmp/user/0
+mkdir -p /var/lib/xkb
+mkdir -p /var/lib/nfs
+mkdir -p /var/lib/dbus
+mkdir -p /etc/network
+ln -sf /dev/shm /etc/network/run 
+
+# disable service restarts
+test -e /sbin/start-stop-daemon.real || mv /sbin/start-stop-daemon /sbin/start-stop-daemon.real
+echo '#!/bin/sh'                                                             > /sbin/start-stop-daemon
+echo '#'                                                                     >> /sbin/start-stop-daemon
+echo '# X2Go Wrapper to avoid running daemons while performing maintenance.' >> /sbin/start-stop-daemon
+echo '#'                                                                     >> /sbin/start-stop-daemon
+echo                                                                         >> /sbin/start-stop-daemon
+echo 'if [ "\$X2GO_HANDLE_DAEMONS" != "false" ]; then'                        >> /sbin/start-stop-daemon
+echo '        /sbin/start-stop-daemon.real "\$@"'                             >> /sbin/start-stop-daemon
+echo 'fi'                                                                    >> /sbin/start-stop-daemon
+chmod +x /sbin/start-stop-daemon
+
+export X2GO_HANDLE_DAEMONS=false
+
+[ \$? -eq 0 ] && test -n "$TC_X2GO_DEBURL" && echo "$TC_X2GO_DEBURL" > /etc/apt/sources.list.d/x2go.list
+[ \$? -eq 0 ] && test -n "$TC_X2GO_DEBURL" && apt-get update
+[ \$? -eq 0 ] && test -n "$TC_X2GO_DEBURL" && apt-get install x2go-keyring -y --force-yes
+
+# tweak mtab diversion
+[ \$? -eq 0 ] && rm -f /etc/mtab
+[ \$? -eq 0 ] && ln -sf /proc/mounts /etc/mtab
+
+[ \$? -eq 0 ] && apt-get update
+[ \$? -eq 0 ] && apt-get install $TC_SHELL -y
+[ \$? -eq 0 ] && apt-get install syslinux locales -y
+if [ \$? -eq 0 -a "x${TC_NONINTERACTIVE}" != "x" ]; then
+    dpkg-reconfigure locales
+fi
+[ \$? -eq 0 ] && apt-get install linux-image-486 -y
+[ \$? -eq 0 ] && test -h /vmlinuz && mv /vmlinuz /vmlinuz.486.tmp || true
+[ \$? -eq 0 ] && LINK_TARGET=\$(readlink /vmlinuz.486.tmp | sed 's@/boot@boot@') && ln -sf \$LINK_TARGET /vmlinuz.486 && rm -f /vmlinuz.486.tmp
+[ \$? -eq 0 ] && test -h /initrd.img && mv /initrd.img /initrd.img.486.tmp || true
+[ \$? -eq 0 ] && LINK_TARGET=\$(readlink /initrd.img.486.tmp | sed 's@/boot@boot@') && ln -sf \$LINK_TARGET /initrd.img.486 && rm -f /initrd.img.486.tmp
+
+[ \$? -eq 0 ] && apt-get install alsa-base pulseaudio -y
+[ \$? -eq 0 ] && apt-get install patch -y
+
+[ \$? -eq 0 ] && apt-get install x2gothinclient x2gocdmanager x2gosmartcardrules x2gousbmount -y
+
+# some extra tools that are useful on the TCE
+[ \$? -eq 0 ] && apt-get install vim mc acpid memtest86+ -y
+
+# blacklist kernel modules
+[ \$? -eq 0 ] && echo && echo "# modules blacklisted on X2Go Thin Clients..." >> /etc/modprobe.d/blacklist.conf
+[ \$? -eq 0 ] && for mod in $TC_MODULE_BLACKLIST; do echo "blacklist \$mod" >> /etc/modprobe.d/blacklist.conf; done
+
+# boot from NFS (only relevant for Debian squeeze)
+[ \$? -eq 0 ] && sed -e 's/BOOT=local/BOOT=nfs/' -i /etc/initramfs-tools/initramfs.conf
+
+[ \$? -eq 0 ] && rm -f /etc/udev/rules.d/*-persistent-*.rules
+[ \$? -eq 0 ] && if ! getent passwd x2gothinclient 1>/dev/null; then adduser --system --disabled-password --disabled-login --shell /bin/bash --group --home /var/lib/x2gothinclient x2gothinclient; fi
+[ \$? -eq 0 ] && adduser x2gothinclient audio
+[ \$? -eq 0 ] && adduser x2gothinclient pulse
+[ \$? -eq 0 ] && adduser pulse audio
+[ \$? -eq 0 ] && adduser x2gothinclient cdrom
+[ \$? -eq 0 ] && adduser x2gothinclient plugdev
+[ \$? -eq 0 ] && if ! getent group scard; then groupadd scard; fi
+[ \$? -eq 0 ] && adduser x2gothinclient scard
+[ \$? -eq 0 ] && update-initramfs -u -v
+[ \$? -eq 0 ] && passwd -l root
+
+[ \$? -eq 0 ] && sed -e 's/#ListenAddress ::/AddressFamily inet\nListenAddress 127.0.0.1/' -i /etc/ssh/sshd_config
+
+# tweak plymouth
+[ \$? -eq 0 ] && apt-get install plymouth plymouth-themes-all -y
+[ \$? -eq 0 ] && test -e /etc/os-release && sed -e 's/PRETTY_NAME=.*/PRETTY_NAME=$TC_PRETTY_NAME/' -i /etc/os-release || echo "PRETTY_NAME=$TC_PRETTY_NAME" >> /etc/os-release
+[ \$? -eq 0 ] && test -e /etc/modprobe.d/i915-kms.conf && sed -s 's/modeset=1/modeset=0/' -i /etc/modprobe.d/i915-kms.conf || true
+[ \$? -eq 0 ] && test -e /etc/modprobe.d/radeon-kms.conf && sed -s 's/modeset=1/modeset=0/' -i /etc/modprobe.d/radeon-kms.conf || true
+
+[ \$? -eq 0 ] && apt-get clean
+
+EOF
+chmod u+x $TC_CHROOT/x2go_tce_install.sh
+
+mkdir -p "$TC_CHROOT/"{proc,dev/pts,sys}
+mount -tproc proc "$TC_CHROOT/proc" || true
+mount -tsysfs sys "$TC_CHROOT/sys" || true
+mount -tdevpts devpts "$TC_CHROOT/dev/pts" || true
+
+chroot $TC_CHROOT /x2go_tce_install.sh
+
+for mountpoint in proc dev/pts sys; do
+	while true; do
+		cat /proc/mounts | grep "$TC_CHROOT/$mountpoint" >/dev/null && umount "$TC_CHROOT/$mountpoint" || break
+	done
+done
+
+rm -f $TC_CHROOT/etc/udev/rules.d/*-persistent-*.rules
+
+x2gothinclient_update
+
+echo "X2go Thin Client creation has finished successfully."
+echo

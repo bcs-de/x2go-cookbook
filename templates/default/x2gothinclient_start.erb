@@ -1,0 +1,16 @@
+#
+# Created by Chef for <%= node.name %>
+#
+
+/usr/bin/x2goclient --no-menu \
+                    --maximize \
+                    --link=lan \
+                    --kbd-type=auto \
+                    --set-kbd=1 \
+                    --geometry=fullscreen \
+                    --thinclient \
+                    --haltbt \
+                    --read-exports-from=~x2gothinclient/export \
+                    --background=/etc/x2go/x2goclient-background.svg <% if @config[:sessionedit].nil? or @config[:sessionedit] == 'false' %>--no-session-edit <% end %>\
+                    --session=X2Go.Chef \
+                    --add-to-known-hosts &
