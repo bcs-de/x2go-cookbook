@@ -87,7 +87,7 @@ end
 ##
 execute "x2gothinclient_create" do
   command "/usr/sbin/x2gothinclient_create"
-  environment({'TC_NONINTERACTIVE' => 'true'})
+  environment({'USER' => 'root', 'TC_NONINTERACTIVE' => 'true'})
   action :run
   creates "#{x2gotce_base}/chroot"
 end
