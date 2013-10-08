@@ -196,14 +196,16 @@ end
 end
 
 ['pxelinux.0', 'vesamenu.c32'].each do |file|
-  file "#{tftpdir}/#{file}" do
-    content IO.read("/usr/lib/syslinux/#{file}")
+  execute "place #{file}" do
+    command "cp /usr/lib/syslinux/#{file} #{tftpdir}"
+    creates "#{tftpdir}/#{file}"
   end
 end
 
 ['x2go-simple-splash.png', 'x2go-splash.png'].each do |file|
-  file "#{tftpdir}/#{file}" do
-    content IO.read("/usr/share/x2go/tce/tftpboot/#{file}")
+  execute "place #{file}" do
+    command "cp /usr/share/x2go/tce/tftpboot/#{file} #{tftpdir}"
+    creates "#{tftpdir}/#{file}"
   end
 end
 
@@ -218,7 +220,8 @@ end
 end
 
 ['vmlinuz-3.2.0-4-686-pae', 'initrd.img-3.2.0-4-686-pae'].each do |file|
-  file "#{tftpdir}/x2go/#{file}" do
-    content IO.read("#{x2gotce_base}/chroot/boot/#{file}")
+  execute "place #{file}" do
+    command "cp #{x2gotce_base}/chroot/boot/#{file} #{tftpdir}/x2go"
+    creates "#{tftpdir}/x2go/#{file}"
   end
 end
