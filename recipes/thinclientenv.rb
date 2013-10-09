@@ -21,7 +21,7 @@ include_recipe('x2go::common')
 
 include_recipe('line')
 
-include_recipe('tftp::server')
+include_recipe('pxe::default')
 tftpdir = node['tftp']['directory']
 
 node.default['nfs']['service']['portmap'] = 'rpcbind'
@@ -188,36 +188,35 @@ end
 ## configure tftp-boot
 ##
 
-['pxelinux.cfg', 'x2go'].each do |dir|
+['x2go'].each do |dir|
   directory "#{tftpdir}/#{dir}" do
     action :create
     mode 0755
   end
 end
 
-['pxelinux.0', 'vesamenu.c32'].each do |file|
-  execute "place #{file}" do
-    command "cp /usr/lib/syslinux/#{file} #{tftpdir}"
-    creates "#{tftpdir}/#{file}"
-  end
+#['x2go-simple-splash.png', 'x2go-splash.png'].each do |file|
+#  execute "place #{file}" do
+#    command "cp /usr/share/x2go/tce/tftpboot/#{file} #{tftpdir}"
+#    creates "#{tftpdir}/#{file}"
+#  end
+#end
+
+pxe_menu "x2go-tce-i686" do
+  section "x2go"
+  label "X2Go ^Thin Client"
+  kernel "x2go/vmlinuz-3.2.0-4-686-pae"
+  initrd "x2go/initrd.img-3.2.0-4-686-pae"
+  append "nfsroot=#{x2gotce_base}/chroot boot=nfs ro quiet splash"
+end
+pxe_menu "x2go-tce-i686-debug" do
+  section "x2go"
+  label "X2Go Thin Client ^Debug"
+  kernel "x2go/vmlinuz-3.2.0-4-686-pae"
+  initrd "x2go/initrd.img-3.2.0-4-686-pae"
+  append "nfsroot=#{x2gotce_base}/chroot boot=nfs ro"
 end
 
-['x2go-simple-splash.png', 'x2go-splash.png'].each do |file|
-  execute "place #{file}" do
-    command "cp /usr/share/x2go/tce/tftpboot/#{file} #{tftpdir}"
-    creates "#{tftpdir}/#{file}"
-  end
-end
-
-['default', 'x2go-tce.cfg'].each do |file|
-  template "#{tftpdir}/pxelinux.cfg/#{file}" do
-    source "pxeconfig.cfg/#{file}.erb"
-    mode 0755
-    variables({
-      :x2gotce_base => x2gotce_base
-    })
-  end
-end
 
 ['vmlinuz-3.2.0-4-686-pae', 'initrd.img-3.2.0-4-686-pae'].each do |file|
   execute "place #{file}" do
