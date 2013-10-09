@@ -205,6 +205,7 @@ end
 pxe_menu "x2go-tce-i686" do
   section "x2go"
   label "X2Go ^Thin Client"
+  default true
   kernel "x2go/vmlinuz-3.2.0-4-686-pae"
   initrd "x2go/initrd.img-3.2.0-4-686-pae"
   append "nfsroot=#{x2gotce_base}/chroot boot=nfs ro quiet splash"
