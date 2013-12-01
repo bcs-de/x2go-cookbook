@@ -10,3 +10,4 @@ supports         'debian', '>= 7.0'
 
 depends          'tftp'
 depends          'nfs'
+depends          'line'

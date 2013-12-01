@@ -141,12 +141,11 @@ replace_or_add "revert_sshd_config_public_sshd" do
   line "ListenAddress 0.0.0.0"
 end
 
-if node['x2go']['tce']['rootpassword'] and node['x2go']['tce']['rootpassword'].nil? == false
-  replace_or_add "set root pw" do
-    path "#{x2gotce_base}/chroot/etc/shadow"
-    pattern "root:"
-    line "root:#{node['x2go']['tce']['rootpassword']}:15940:0:99999:7:::"
-  end
+replace_or_add "set root pw" do
+  path "#{x2gotce_base}/chroot/etc/shadow"
+  pattern "root:"
+  line "root:#{node['x2go']['tce']['rootpassword']}:15940:0:99999:7:::"
+  only_if { node['x2go']['tce']['rootpassword'] and node['x2go']['tce']['rootpassword'].nil? == false }
 end
 
 file "#{x2gotce_base}/chroot/etc/X11/xorg.conf" do
