@@ -39,6 +39,7 @@ if node['apt'] && node['apt']['cacher_ipaddress']
   cacher = Chef::Node.new
   cacher.name(node['apt']['cacher_ipaddress'])
   cacher.set['ipaddress'] = node['apt']['cacher_ipaddress']
+  cacher.set_unless['apt'] = {}
   aptcacherservers << cacher
 end
 
@@ -51,7 +52,7 @@ end
 
 aptproxy = ''
 if aptcacherservers.length > 0
-  aptproxy = "http://#{aptcacherservers[0]['ipaddress']}:#{aptcacherservers[0]['apt']['cacher_port']}"
+  aptproxy = "http://#{aptcacherservers[0]['ipaddress']}:#{aptcacherservers[0]['apt'].fetch('cacher_port', 3142)}"
 end
 
 template "/etc/x2go/x2gothinclient_settings" do
