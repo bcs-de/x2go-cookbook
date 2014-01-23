@@ -181,6 +181,8 @@ end
 
 execute "update_x2gotce" do
   command "/usr/sbin/x2gothinclient_update"
+  user "root"
+  group "root"
   action :nothing
 end
 
