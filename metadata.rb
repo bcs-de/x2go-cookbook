@@ -9,5 +9,5 @@ version          '0.2.0'
 supports         'debian', '>= 7.0'
 
 depends          'nfs'
-depends          'pxe'
+depends          'pxe', '>= 2.0.2'
 depends          'line'
