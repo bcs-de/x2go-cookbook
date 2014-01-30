@@ -21,17 +21,15 @@
 ## Activate the X2Go-Repository for debian packages
 ##
 
-apt_repository "x2go-stable" do
-  uri "http://packages.x2go.org/debian"
-  distribution "wheezy"
-  components ["main"]
+apt_repository 'x2go-stable' do
+  uri 'http://packages.x2go.org/debian'
+  distribution 'wheezy'
+  components ['main']
   action :add
 end
 
-apt_package "x2go-keyring" do
-  #action :upgrade
+apt_package 'x2go-keyring' do
   action :install
-  options "--force-yes"
-  notifies :run, "execute[apt-get update]", :immediately
+  options '--force-yes'
+  notifies :run, 'execute[apt-get update]', :immediately
 end
-
