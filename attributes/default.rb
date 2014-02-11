@@ -1,10 +1,10 @@
 
 require 'json'
 
-default['x2go']['tce']['basedir'] = '/srv/x2gothinclient'
+default[:x2go][:tce][:basedir] = '/srv/x2gothinclient'
 
 ## settings for the sessions
-default['x2go']['tce']['sessions'] = []
+default[:x2go][:tce][:sessions] = []
 ## For example:
 # JSON.parse('''[{
 #	"name": "ltsp02",
@@ -20,11 +20,11 @@ default['x2go']['tce']['sessions'] = []
 #	}]''')
 
 ## Settings for calling x2goclient inside the TCE
-default['x2go']['tce']['config']['sessionedit'] = 'true'
+default[:x2go][:tce][:config][:sessionedit] = 'true'
 
 ## screens to use with xinerama/xrandr for different mac-addresses
 # Screens are listet left-to-right
-default['x2go']['tce']['config']['xinerama'] = {
+default[:x2go][:tce][:config][:xinerama] = {
   # '00:30:05:bc:3d:dd' => [
   #   '--output VGA1 --rotate left',
   #   '--output DVI1 --rotate right',
@@ -33,7 +33,7 @@ default['x2go']['tce']['config']['xinerama'] = {
   '00:30:05:bc:3d:dd' => ['--output VGA1 --left-of DVI1']
 }
 ## encrypted version of the root-password to use
-default['x2go']['tce']['rootpassword'] = nil
+default[:x2go][:tce][:rootpassword] = nil
 
 ## extra packages to install inside the TCE
-default['x2go']['tce']['extra_packages'] = []
+default[:x2go][:tce][:extra_packages] = []

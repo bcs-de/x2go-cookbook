@@ -46,7 +46,7 @@ end
 
 unless Chef::Config[:solo]
   query = 'recipes:apt\:\:cacher-ng'
-  if node[:apt]['cacher-client'][:restrict_environment]
+  if node[:apt][:'cacher-client'][:restrict_environment]
     query += " AND chef_environment:#{node.chef_environment}"
   end
   Chef::Log.debug("apt::cacher-client searching for '#{query}'")
@@ -55,8 +55,9 @@ end
 
 aptproxy = ''
 if aptcacherservers.length > 0
-  aptproxy = "http://#{aptcacherservers[0][:ipaddress]}:"\
-             "#{aptcacherservers[0][:apt].fetch('cacher_port', 3142)}"
+  server = aptcacherservers[0][:ipaddress]
+  port = aptcacherservers[0][:apt].fetch(:cacher_port, 3142)
+  aptproxy = "http://#{server}:#{port}"
 end
 
 template '/etc/x2go/x2gothinclient_settings' do
@@ -125,8 +126,8 @@ if ::Dir.exists?("#{x2gotce_base}/chroot/boot")
   end
 end
 
-extrapackages = node['x2go']['tce']['extra_packages']
-%w(linux-image-3.2.0-4-686-pae xserver-xorg-input-kbd).each do |pkg|
+extrapackages = node[:x2go][:tce][:extra_packages]
+['linux-image-3.2.0-4-686-pae', 'xserver-xorg-input-kbd'].each do |pkg|
   extrapackages << pkg
 end
 extrapackages = extrapackages.join(' ')

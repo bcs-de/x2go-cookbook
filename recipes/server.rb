@@ -19,7 +19,7 @@
 
 include_recipe('x2go::common')
 
-packages = %w(x2goserver x2goserver-xsession x2godesktopsharing)
+packages = ['x2goserver', 'x2goserver-xsession', 'x2godesktopsharing']
 
 packages.each do |p|
   package p do
