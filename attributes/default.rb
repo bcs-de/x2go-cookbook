@@ -37,3 +37,6 @@ default[:x2go][:tce][:rootpassword] = nil
 
 ## extra packages to install inside the TCE
 default[:x2go][:tce][:extra_packages] = []
+
+## Add users to the fuse group
+default[:x2go][:server][:fuse_users] = []

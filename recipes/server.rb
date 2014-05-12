@@ -19,10 +19,16 @@
 
 include_recipe('x2go::common')
 
-packages = ['x2goserver', 'x2goserver-xsession', 'x2godesktopsharing']
+packages = ['x2goserver', 'x2goserver-xsession', 'x2godesktopsharing', 'x2goserver-fmbindings', 'x2goserver-extensions', 'pinentry-x2go', 'plasma-widget-x2go']
 
 packages.each do |p|
   package p do
     action :install
   end
+end
+
+group 'fuse' do
+  action :manage
+  append true
+  members node[:x2go][:server][:fuse_users]
 end
