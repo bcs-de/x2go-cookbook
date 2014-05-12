@@ -9,7 +9,7 @@ autostart = <%= session[:autostart] || "false" %>
 width = 1024
 height = 768
 layout = de
-usekbd = false
+usekbd = true
 fullscreen = <%= session[:fullscreen] || "false" %>
 xinerama = <%= session[:xinerama] || "false" %>
 multidisp = <%= session[:multidisp] || "false" %>
@@ -19,7 +19,7 @@ speed = <%= session[:speed] || "3" %>
 print = <%= session[:print] || "false" %>
 <% if session[:export] %>
 useexports = true
-export <%= session[:export] %>
+export = "<%= session[:export] %>"
 <% else %>
 useexports = false
 <% end %>
