@@ -127,7 +127,9 @@ if ::Dir.exists?("#{x2gotce_base}/chroot/boot")
 end
 
 extrapackages = Array.new(node[:x2go][:tce][:extra_packages])
-['linux-image-3.2.0-4-686-pae', 'xserver-xorg-input-kbd', 'x2gousbmount'].each do |pkg|
+[
+  'linux-image-3.2.0-4-686-pae', 'xserver-xorg-input-kbd', 'x2gousbmount'
+].each do |pkg|
   extrapackages << pkg
 end
 extrapackages = extrapackages.join(' ')

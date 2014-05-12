@@ -19,7 +19,15 @@
 
 include_recipe('x2go::common')
 
-packages = ['x2goserver', 'x2goserver-xsession', 'x2godesktopsharing', 'x2goserver-fmbindings', 'x2goserver-extensions', 'pinentry-x2go', 'plasma-widget-x2go']
+packages = [
+  'x2goserver',
+  'x2goserver-xsession',
+  'x2godesktopsharing',
+  'x2goserver-fmbindings',
+  'x2goserver-extensions',
+  'pinentry-x2go',
+  'plasma-widget-x2go'
+]
 
 packages.each do |p|
   package p do
