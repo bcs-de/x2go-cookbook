@@ -1,2 +1,4 @@
 WordArray:
   Enabled: False
+SingleSpaceBeforeFirstArg:
+  Enabled: False
