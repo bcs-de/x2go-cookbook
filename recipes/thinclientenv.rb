@@ -117,7 +117,7 @@ cookbook_file '/usr/sbin/x2gothinclient_shell' do
 end
 
 has_kernel = false
-if ::Dir.exists?("#{x2gotce_base}/chroot/boot")
+if ::Dir.exist?("#{x2gotce_base}/chroot/boot")
   ::Dir.entries("#{x2gotce_base}/chroot/boot").each do |file|
     if ::File.fnmatch('vmlinuz*', "#{x2gotce_base}/chroot/boot/#{file}")
       log "Found a kernel '#{file}'"
@@ -160,7 +160,7 @@ replace_or_add 'set root pw' do
 end
 
 file "#{x2gotce_base}/chroot/etc/X11/xorg.conf" do
-  content """
+  content '''
 Section \"ServerFlags\"
   Option \"AutoAddDevices\" \"off\"
 EndSection
@@ -169,7 +169,7 @@ Section \"InputDevice\"
         Driver      \"kbd\"
         Option      \"XkbLayout\" \"de\"
 EndSection
-"""
+'''
   mode 0755
 end
 
