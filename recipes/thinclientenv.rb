@@ -161,13 +161,13 @@ end
 
 file "#{x2gotce_base}/chroot/etc/X11/xorg.conf" do
   content '''
-Section \"ServerFlags\"
-  Option \"AutoAddDevices\" \"off\"
+Section "ServerFlags"
+  Option "AutoAddDevices" "off"
 EndSection
-Section \"InputDevice\"
-        Identifier  \"Keyboard0\"
-        Driver      \"kbd\"
-        Option      \"XkbLayout\" \"de\"
+Section "InputDevice"
+        Identifier  "Keyboard0"
+        Driver      "kbd"
+        Option      "XkbLayout" "de"
 EndSection
 '''
   mode 0755

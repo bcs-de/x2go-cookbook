@@ -6,6 +6,7 @@
 [20130826-<%= session[:name] %>]
 name = <%= session[:name] %>
 autostart = <%= session[:autostart] || "false" %>
+user = ""
 width = 1024
 height = 768
 layout = de
@@ -29,6 +30,7 @@ directrdp = true
 rdpserver = <%= session[:host] %>
 host = <%= session[:host] %>
 directrdpsettings = <%= session.fetch('rdpoptions', '') %>
+rdpclient = <%= session.fetch('rdpclient', 'rdesktop') %>
 <% elsif session[:command] == 'XDMCP' %>
 xdmcpserver = <%= session[:host] %>
 <% else %>

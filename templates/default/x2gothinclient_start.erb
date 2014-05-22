@@ -19,6 +19,7 @@ fi
                     --geometry=fullscreen \
                     --thinclient \
                     --haltbt \
+                    --user="" \
                     --read-exports-from=~x2gothinclient/export \
                     --background=/etc/x2go/x2goclient-background.svg <% if @config[:sessionedit].nil? or @config[:sessionedit] == 'false' %>--no-session-edit <% end %>\
                     --session=X2Go.Chef \
